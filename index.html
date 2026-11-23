@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batata Elétrica · Protótipo 3D</title>
+<style>
+:root{--bg:#f4f1ec;--sf:#fff;--sf2:#ece7df;--tx:#241c14;--mt:#6b5f52;--ac:#2f7d4a;--wn:#b8690b;--er:#c0392b;--bd:#d8d0c4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15110d;--sf:#1e1913;--sf2:#2a231a;--tx:#f1e8da;--mt:#a39583;--ac:#8fd694;--wn:#f0b050;--er:#ff7a6b;--bd:#3a3226}}
+:root[data-theme="dark"]{--bg:#15110d;--sf:#1e1913;--sf2:#2a231a;--tx:#f1e8da;--mt:#a39583;--ac:#8fd694;--wn:#f0b050;--er:#ff7a6b;--bd:#3a3226}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:14px/1.4 Georgia,"Times New Roman",serif}
+button,select,input{font:inherit;color:inherit}
+.bar0{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--sf);border-bottom:1px solid var(--bd)}
+.bar0 h1{font-size:16px;margin:0 8px 0 0;font-weight:700}
+button,select{background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer}
+button.on{background:var(--ac);color:var(--bg);border-color:var(--ac)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+label{display:flex;gap:6px;align-items:center;color:var(--mt);font-size:13px}
+input[type=range]{width:90px}
+#stage{flex:1;min-height:280px;position:relative;overflow:hidden}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#hud{position:absolute;left:12px;top:10px;color:var(--mt);font-size:13px;pointer-events:none;max-width:60%}
+#hud b{color:var(--tx)}
+#panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;padding:10px 12px;background:var(--sf);border-top:2px solid var(--ac);max-height:44vh;overflow:auto}
+.card{background:var(--sf2);border-radius:8px;padding:8px 10px;min-width:0}
+.card h2{font-size:13px;margin:0 0 6px;font-weight:700}
+.row{display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
+.row span:first-child{color:var(--mt)}
+.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin:4px 0 6px}
+.bar i{display:block;height:100%;width:0;background:var(--ac);transition:background .2s}
+.big{font-size:26px;font-weight:700;line-height:1}
+#map{width:100%;height:auto;background:var(--sf);border-radius:6px;cursor:crosshair;display:block}
+#log{font-size:13px;max-height:140px;overflow:auto}
+#log p{margin:0 0 5px;padding-left:8px;border-left:3px solid var(--ac)}
+#log p.w{border-color:var(--wn)}#log p.e{border-color:var(--er)}
+</style></head><body>
+<div class="bar0">
+ <h1>Batata Elétrica</h1>
+ <button id="bPress">Prensar</button><button id="bCut">Cortar</button><button id="bX">Raio-X</button>
+ <button id="bDrop">Queda</button><button id="bChg">Carga por indução</button><button id="bReset">Reiniciar</button>
+ <select id="mat" aria-label="Casca"><option value="s">Casca simples</option><option value="g">Casca com gel</option><option value="r">Casca reforçada</option></select>
+ <label>Força máx. <input id="fm" type="range" min="100" max="2000" value="900"></label>
+ <label>Altura <input id="hh" type="range" min="0.2" max="2" step="0.1" value="1"></label>
+ <label>Ambiente <input id="am" type="range" min="0" max="40" value="22"></label>
+</div>
+<div id="stage"><div id="hud"></div></div>
+<div id="panel">
+ <div class="card"><h2>Bateria e indução</h2><div class="big" id="batT">78%</div><div class="bar"><i id="batB"></i></div>
+  <div class="row"><span>Tensão</span><span id="volt"></span></div><div class="row"><span>Carga Qi</span><span id="qi"></span></div><div class="row"><span>Núcleo</span><span id="core"></span></div></div>
+ <div class="card"><h2>Resistência</h2>
+  <div class="row"><span>Força</span><span id="fo"></span></div><div class="row"><span>Deformação</span><span id="de"></span></div>
+  <div class="row"><span>Impacto</span><span id="ig"></span></div><div class="row"><span>Limite da casca</span><span id="lm"></span></div>
+  <div class="row"><span>Dano acumulado</span><span id="dm"></span></div><div class="bar"><i id="dmB"></i></div>
+  <div class="row"><span>Risco de hematoma</span><span id="rk"></span></div><div class="bar"><i id="rkB"></i></div></div>
+ <div class="card"><h2>Sensores</h2><div class="row"><span>Temperatura</span><span id="tp"></span></div>
+  <div class="row"><span>Giroscópio (P/R/Y)</span><span id="gy"></span></div><div class="row"><span>Vel. angular</span><span id="om"></span></div>
+  <div class="row"><span>Altura</span><span id="al"></span></div><div class="row"><span>Tag lida</span><span id="tg">nenhuma</span></div></div>
+ <div class="card"><h2>Mapa de tags NFC (toque para mover)</h2><canvas id="map" width="220" height="130"></canvas></div>
+ <div class="card"><h2>Alerta de hematoma</h2><div id="log"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),f=(n,d=0)=>n.toFixed(d).replace(".",","),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const MAT={s:{Y:350,gl:6,ct:.05,n:"6 mm"},g:{Y:700,gl:7,ct:.08,n:"6 mm + gel 12 mm"},r:{Y:1200,gl:11,ct:.12,n:"10 mm + gel 12 mm"}};
+const stage=$("stage"),R=new THREE.WebGLRenderer({antialias:true,alpha:true});R.localClippingEnabled=true;R.setPixelRatio(Math.min(2,devicePixelRatio));stage.appendChild(R.domElement);
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0x554433,.95));const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(4,8,5);scene.add(dl);
+const plane=new THREE.Plane(new THREE.Vector3(0,0,-1),3),clip=[plane];
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,clippingPlanes:clip,roughness:.6},o));
+// batata
+const geo=new THREE.SphereGeometry(1,56,40),pp=geo.attributes.position;
+for(let i=0;i<pp.count;i++){const x=pp.getX(i),y=pp.getY(i),z=pp.getZ(i),n=1+.07*Math.sin(x*3.1+y*2)+.05*Math.sin(z*4+x*2.3)+.04*Math.sin(y*5+z*3);pp.setXYZ(i,x*1.5*n,y*n,z*1.05*n)}geo.computeVertexNormals();
+const pot=new THREE.Group(),rot=new THREE.Group();pot.add(rot);scene.add(pot);
+const shellM=M(0xb48a55,{roughness:.95,transparent:true}),shell=new THREE.Mesh(geo,shellM);
+const flesh=new THREE.Mesh(geo,M(0xf0dfa0,{side:THREE.BackSide})),gel=new THREE.Mesh(geo,M(0x66ccee,{transparent:true,opacity:.18}));gel.scale.setScalar(.9);
+rot.add(flesh,shell,gel);
+const batM=M(0x3b82f6,{metalness:.4}),bat=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,1,24),batM);bat.rotation.z=Math.PI/2;bat.position.set(.15,.05,0);
+const coilM=M(0xd9822b,{metalness:.7,emissive:0xd9822b,emissiveIntensity:0}),coil=new THREE.Mesh(new THREE.TorusGeometry(.55,.05,12,40),coilM);coil.rotation.x=Math.PI/2;coil.position.y=-.55;
+const gyro=new THREE.Group();gyro.position.set(-.85,.2,0);const rings=[.24,.18,.12].map((r,i)=>{const t=new THREE.Mesh(new THREE.TorusGeometry(r,.02,8,28),M([0xe0e0e0,0xb0b8c0,0x88a0b0][i],{metalness:.8}));gyro.add(t);return t});gyro.add(new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),M(0xffffff)));
+const chipM=M(0x2fbf6a,{emissive:0x2fbf6a,emissiveIntensity:0}),chip=new THREE.Mesh(new THREE.BoxGeometry(.32,.04,.22),chipM);chip.position.set(.85,.3,.05);
+const ant=new THREE.Mesh(new THREE.TorusGeometry(.1,.01,6,20),M(0xcccccc));ant.rotation.x=Math.PI/2;ant.position.copy(chip.position);ant.position.y+=.03;
+const tsM=M(0x4aa3ff,{emissive:0x4aa3ff,emissiveIntensity:.4}),ts=new THREE.Mesh(new THREE.SphereGeometry(.07,12,10),tsM);ts.position.set(.5,.55,0);
+rot.add(bat,coil,gyro,chip,ant,ts);
+// cenário
+const pad=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.9,.12,48),new THREE.MeshStandardMaterial({color:0x444a50,metalness:.3,roughness:.5}));pad.position.y=-.06;scene.add(pad);
+const padRing=new THREE.Mesh(new THREE.TorusGeometry(1.7,.03,8,60),new THREE.MeshStandardMaterial({color:0x335544,emissive:0x44ff99,emissiveIntensity:0}));padRing.rotation.x=Math.PI/2;scene.add(padRing);
+const grid=new THREE.GridHelper(14,28,0x888888,0x888888);grid.material.transparent=true;grid.material.opacity=.18;grid.position.y=-.13;scene.add(grid);
+const plate=new THREE.Mesh(new THREE.BoxGeometry(3.4,.18,2.6),new THREE.MeshStandardMaterial({color:0x9aa3ab,metalness:.7,roughness:.35})),rod=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,5,16),plate.material);scene.add(plate,rod);
+const blade=new THREE.Mesh(new THREE.BoxGeometry(3.8,2.4,.03),new THREE.MeshStandardMaterial({color:0xdfe6ea,metalness:.9,roughness:.2,transparent:true,opacity:.35}));blade.position.y=1.2;blade.visible=false;scene.add(blade);
+const cap=new THREE.Group(),capM=(c,o)=>new THREE.MeshStandardMaterial({color:c,transparent:true,opacity:o,side:THREE.DoubleSide,depthWrite:false});
+cap.add(new THREE.Mesh(new THREE.CircleGeometry(.93,48),capM(0xf0dfa0,.4)),new THREE.Mesh(new THREE.RingGeometry(.84,.93,48),capM(0x66ccee,.45)),new THREE.Mesh(new THREE.RingGeometry(.93,1,48),capM(0xb48a55,.95)));cap.visible=false;scene.add(cap);
+const fg=new THREE.IcosahedronGeometry(.12,0),fm=[0xb48a55,0xf0dfa0,0x3b82f6].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.8}));
+// estado
+const S={};let spots=[],drag=false,dpx=0,dpy=0,pend=[],frags=[],ring=null;
+const P={x:110,y:65,tx:110,ty:65},TR=[],TAGS=[{id:"04:9B:2C",n:"Prateleira A1",t:"NFC",x:40,y:35,r:18},{id:"04:C1:7E",n:"Esteira B2",t:"NFC",x:155,y:38,r:18},{id:"04:3A:90",n:"Doca C3",t:"NFC",x:70,y:100,r:18},{id:"04:F2:11",n:"Expedição D4",t:"NFC",x:180,y:98,r:18}];
+function reset(){Object.assign(S,{p:0,press:false,plateY:4.8,cutOn:false,cut:0,xray:false,chg:false,bat:78,T:22,yo:0,vy:0,drop:false,g:0,imp:0,dmg:0,fail:false,spin:[0,0],tag:null,ang:0});spots.forEach(s=>rot.remove(s));spots=[];rot.rotation.set(0,0,0);S.burst=false;pot.visible=true;frags.forEach(q=>scene.remove(q.m));frags=[];if(ring){scene.remove(ring);ring=null}TR.length=0;P.x=P.tx=110;P.y=P.ty=65;
+ ["bPress","bCut","bX","bChg"].forEach(i=>$(i).classList.remove("on"));$("bPress").textContent="Prensar";$("bCut").textContent="Cortar"}
+function bruise(){const d=new THREE.Vector3(Math.random()*1.6-.8,.5+Math.random()*.6,Math.random()*1.6-.8).normalize(),s=new THREE.Mesh(new THREE.SphereGeometry(.25,14,10),new THREE.MeshStandardMaterial({color:0x5a2a4a,transparent:true,opacity:.85,roughness:1,clippingPlanes:clip}));s.scale.z=.25;s.position.set(d.x*1.45,d.y*.98,d.z*1.03);s.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),d);rot.add(s);spots.push(s)}
+// IA
+function burst(why){if(S.burst)return;S.burst=true;S.press=false;S.drop=false;S.p=0;S.yo=0;S.vy=0;pot.visible=false;$("bPress").classList.remove("on");$("bPress").textContent="Prensar";const c=pot.position.clone();for(let i=0;i<40;i++){const m=new THREE.Mesh(fg,fm[i%10<6?0:i%10<9?1:2]),sc=.6+Math.random()*1.2;m.position.set(c.x+(Math.random()-.5)*1.6,c.y+(Math.random()-.5)*.8,(Math.random()-.5)*1.2);const d=m.position.clone().sub(c).normalize(),v=3+Math.random()*4;m.scale.setScalar(sc);scene.add(m);frags.push({m,v:new THREE.Vector3(d.x*v,2+Math.random()*4,d.z*v),s:(Math.random()-.5)*14,sc,life:0})}
+ring=new THREE.Mesh(new THREE.RingGeometry(.8,1,40),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.7,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.03;ring.userData.t=0;scene.add(ring);S.dmg=100;say("burst",why+" Limite excedido de forma extrema: a batata estourou. Use Reiniciar.","e",1)}
+const cool={};
+function say(k,txt,l="",cd=9){const n=performance.now()/1000;if(cool[k]&&n-cool[k]<cd)return;cool[k]=n;const p=document.createElement("p");p.className=l;p.textContent=txt;const lg=$("log");lg.prepend(p);while(lg.children.length>7)lg.lastChild.remove();
+ }
+// controles
+$("bPress").onclick=()=>{if(S.drop)return;S.press=!S.press;$("bPress").classList.toggle("on",S.press);$("bPress").textContent=S.press?"Soltar":"Prensar"};
+$("bCut").onclick=()=>{S.cutOn=!S.cutOn;$("bCut").classList.toggle("on",S.cutOn);blade.visible=true;$("bCut").textContent=S.cutOn?"Fechar corte":"Cortar"};
+$("bX").onclick=()=>{S.xray=!S.xray;$("bX").classList.toggle("on",S.xray)};
+$("bDrop").onclick=()=>{S.press=false;$("bPress").classList.remove("on");$("bPress").textContent="Prensar";S.yo=+$("hh").value*2.2;S.vy=0;S.drop=true};
+$("bChg").onclick=()=>{S.chg=!S.chg;$("bChg").classList.toggle("on",S.chg)};
+
+$("bReset").onclick=reset;
+const cv=R.domElement;cv.onpointerdown=e=>{drag=true;dpx=e.clientX;dpy=e.clientY;cv.setPointerCapture(e.pointerId)};cv.onpointerup=()=>{drag=false};
+cv.onpointermove=e=>{if(!drag)return;const dx=e.clientX-dpx,dy=e.clientY-dpy;dpx=e.clientX;dpy=e.clientY;rot.rotation.y+=dx*.012;rot.rotation.x+=dy*.012;S.spin=[cl(dx*.7,-12,12),cl(dy*.7,-12,12)]};
+const mp=$("map"),mx=mp.getContext("2d");mp.onclick=e=>{const r=mp.getBoundingClientRect();P.tx=(e.clientX-r.left)*220/r.width;P.ty=(e.clientY-r.top)*130/r.height};
+function size(){const w=stage.clientWidth,h=stage.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.position.set(0,2.8,w/h<1?11:7.4);cam.lookAt(0,1.4,0);cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe(stage);size();reset();
+let last=performance.now(),acc=0;
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+ const m=MAT[$("mat").value],Fm=+$("fm").value,amb=+$("am").value,cold=S.T<12?1.35:1,Y=m.Y/cold,gL=m.gl/cold;
+ // prensa
+ const top=pot.position.y+S.sq0*1.03+.09||0;
+ if(S.press&&!S.drop){S.plateY-=1.6*dt;const c=(pot.position.y+(S.sq||1)*1.03+.09);if(S.plateY<=c){S.plateY=c;S.p=Math.min(1,S.p+dt*.35)}}
+ else{S.p=Math.max(0,S.p-dt*.8);if(S.p<=0)S.plateY=Math.min(4.8,S.plateY+1.6*dt)}
+ const force=S.p*Fm;S.force=force;let sq=1-.5*(1-Math.exp(-force/(Y*1.4)));S.imp*=Math.exp(-dt*7);sq-=S.imp*.25;S.sq=sq;
+ if(force>Y){S.dmg=Math.min(100,S.dmg+(force/Y-1)*dt*14)}
+ if(force>Y*2.2&&!S.fail){S.fail=true;say("fail","Pressão extrema: bateria comprimida, desligamento de segurança.","e",1)}
+ if(force>Y*2.6)burst("Pressão de "+f(force)+" N.");
+ while(spots.length<Math.floor(S.dmg/22))bruise();
+ // queda
+ if(S.drop){const d=dt*.6;S.vy-=21.6*d;S.yo+=S.vy*d;if(S.yo<=0){S.yo=0;const v=-S.vy/2.2;if(v>.3){const g=Math.min(16,v/m.ct/9.81);S.g=Math.max(S.g,g);if(g>gL*1.8)burst("Impacto de "+f(g)+" g.");S.imp=Math.min(1,g/gL*.6);S.spin=[(Math.random()-.5)*8,(Math.random()-.5)*8];if(g>gL){S.dmg=Math.min(100,S.dmg+(g/gL-1)*35+8);say("hit","Impacto de "+f(g)+" g acima do limite. Dano provável: hematoma interno.","e",2)}else if(g>gL*.7)say("hit2","Impacto de "+f(g)+" g próximo do limite da casca. Atenção ao risco de hematoma.","w",2)}S.vy=-S.vy*.3;if(Math.abs(S.vy)<1.2){S.drop=false;S.vy=0}}}
+ S.g*=Math.exp(-dt*.4);
+ // giro
+ if(!drag){rot.rotation.y+=S.spin[0]*dt;rot.rotation.x+=S.spin[1]*dt}S.spin[0]*=Math.exp(-dt*1.6);S.spin[1]*=Math.exp(-dt*1.6);
+ const om=Math.hypot(S.spin[0],S.spin[1])*57.3;S.ang+=dt*(2+om*.06);rings[0].rotation.x=S.ang;rings[1].rotation.y=S.ang*1.3;rings[2].rotation.z=S.ang*1.7;
+ // transform
+ const sx=1+(1-sq)*.55;pot.scale.set(sx,sq,sx);pot.position.y=S.yo+1.02*sq;
+ plate.position.y=S.plateY;rod.position.y=S.plateY+2.6;
+ // corte
+ if(S.cutOn)S.cut=Math.min(1,S.cut+dt*.45);else S.cut=Math.max(0,S.cut-dt*.45);plane.constant=3-3*S.cut;blade.position.z=plane.constant+.02;blade.visible=S.cut>0&&S.cut<1||S.cutOn&&S.cut<1;
+ {const c=plane.constant,kz=Math.sqrt(Math.max(0,1-Math.pow(c/(1.05*sx),2)));cap.visible=S.cut>.02&&kz>.03&&!S.burst;cap.position.set(0,pot.position.y,c-.002);cap.scale.set(1.5*sx*kz,sq*kz,1)}
+ shellM.opacity=S.xray?.22:1;shellM.depthWrite=!S.xray;
+ // energia e temperatura
+ const near=S.yo<.05&&Math.abs(pot.position.x)<.1,charging=S.chg&&near&&S.T<42&&S.bat<100&&!S.fail;
+ if(charging)S.bat=Math.min(100,S.bat+1.4*dt);else S.bat=Math.max(0,S.bat-.02*dt*(S.fail?40:1));
+ S.T+=((amb+(charging?9:0)+1.5)-S.T)*.25*dt;
+ 
+ if(S.chg&&S.T>=42)say("hot","Temperatura acima de 42 °C. Carga pausada para proteger a bateria.","w",10);
+ 
+ if(S.T<12)say("cold","Batata fria: tecido mais frágil, o risco de hematoma aumenta.","w",20);
+ if(force>Y*.7&&force<=Y)say("p1","Pressão de "+f(force)+" N se aproximando do limite. Risco de hematoma.","w",6);
+ if(force>Y)say("p2","Pressão de "+f(force)+" N passou do limite. Hematoma provável.","e",6);
+ if(S.dmg>60)say("dm","Dano acumulado alto. Recomendo inspeção antes de novo uso.","e",20);
+ coilM.emissiveIntensity=charging?.8+.4*Math.sin(now/150):0;padRing.material.emissiveIntensity=charging?.8+.4*Math.sin(now/150):0;
+ batM.color.set(S.fail?0xff3b30:0x3b82f6);tsM.color.set(S.T>30?0xff6a3d:0x4aa3ff);tsM.emissive.copy(tsM.color);
+ // mapa RFID
+ const dx=P.tx-P.x,dy=P.ty-P.y,dd=Math.hypot(dx,dy);if(dd>1){P.x+=dx/dd*Math.min(dd,55*dt);P.y+=dy/dd*Math.min(dd,55*dt);if(!TR.length||Math.hypot(TR[TR.length-1][0]-P.x,TR[TR.length-1][1]-P.y)>5){TR.push([P.x,P.y]);if(TR.length>30)TR.shift()}}
+ const hit=TAGS.find(t=>Math.hypot(t.x-P.x,t.y-P.y)<t.r);S.tag=hit||null;chipM.emissiveIntensity=hit?.9:0;
+ mx.clearRect(0,0,220,130);const ac=css("--ac"),mt=css("--mt");mx.lineWidth=1;
+ TAGS.forEach(t=>{const on=t===hit;mx.strokeStyle=on?ac:mt;mx.globalAlpha=.5;mx.beginPath();mx.arc(t.x,t.y,t.r,0,7);mx.stroke();mx.globalAlpha=1;mx.fillStyle=on?ac:mt;mx.fillRect(t.x-3,t.y-3,6,6);mx.font="9px sans-serif";mx.fillText(t.t,t.x-14,t.y-6)});
+ mx.strokeStyle=ac;mx.beginPath();TR.forEach((q,i)=>i?mx.lineTo(q[0],q[1]):mx.moveTo(q[0],q[1]));mx.stroke();mx.fillStyle=css("--wn");mx.beginPath();mx.ellipse(P.x,P.y,7,5,0,0,7);mx.fill();
+ // painel (≈10 Hz)
+ acc+=dt;if(acc>.1){acc=0;const risk=cl(Math.max(force/Y,S.g/gL)*60+(S.T<12?15:0)+S.dmg*.25,0,100),col=v=>v>70?css("--er"):v>40?css("--wn"):css("--ac");
+  $("batT").textContent=f(S.bat)+"%";$("batB").style.width=S.bat+"%";$("batB").style.background=S.bat<15?css("--er"):css("--ac");$("volt").textContent=f(3.3+S.bat*.009,2)+" V · 2000 mAh";
+  $("qi").textContent=charging?"ativa · 5 W":S.chg?(S.T>=42?"pausada":S.bat>=100?"completa":"fora da base"):"desligada";$("core").textContent=S.fail?"comprometido":"íntegro";
+  $("fo").textContent=f(force)+" N";$("de").textContent=f((1-sq)*100)+"%";$("ig").textContent=f(S.g)+" g";$("lm").textContent=f(Y)+" N · "+f(gL)+" g";
+  $("dm").textContent=f(S.dmg)+"%";$("dmB").style.width=S.dmg+"%";$("dmB").style.background=col(S.dmg);$("rk").textContent=f(risk)+"%";$("rkB").style.width=risk+"%";$("rkB").style.background=col(risk);
+  $("tp").textContent=f(S.T,1)+" °C";const dg=r=>f(((r*57.3)%360+360)%360);$("gy").textContent=dg(rot.rotation.x)+"° / "+dg(rot.rotation.z)+"° / "+dg(rot.rotation.y)+"°";$("om").textContent=f(om)+" °/s";$("al").textContent=f(S.yo/2.2,2)+" m";
+  $("tg").textContent=hit?hit.n:"nenhuma";
+  $("hud").innerHTML="Casca: <b>"+m.n+"</b> · arraste para girar<br>Versão caseira: ESP32, MPU6050, PN532 (NFC), TP4056 e bobina Qi"+(S.cut>.05?"<br>Corte: casca → gel → bateria, giroscópio, chip RFID, bobina e sensor":"")}
+ for(let i=frags.length-1;i>=0;i--){const q=frags[i];q.life+=dt;q.v.y-=14*dt;q.m.position.addScaledVector(q.v,dt);if(q.m.position.y<.06){q.m.position.y=.06;q.v.y*=-.3;q.v.x*=.7;q.v.z*=.7}q.m.rotation.x+=q.s*dt;q.m.rotation.z+=q.s*dt;q.m.scale.setScalar(q.sc*(q.life>1.1?Math.max(0,1-(q.life-1.1)/.5):1));if(q.life>1.6){scene.remove(q.m);frags.splice(i,1)}}
+ if(ring){ring.userData.t+=dt;const t=ring.userData.t/.6;ring.scale.setScalar(1+t*5);ring.material.opacity=Math.max(0,.7*(1-t));if(t>=1){scene.remove(ring);ring=null}}
+ R.render(scene,cam);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+say("hi","Protótipo pronto. Prense, corte, deixe cair ou arraste para girar.","",0);
+</script></body></html>
+
+
+
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rastreio da Batata Elétrica</title>
+<style>
+:root{--bg:#f4f1ec;--sf:#fff;--sf2:#ece7df;--tx:#241c14;--mt:#6b5f52;--ac:#2f7d4a;--wn:#b8690b;--er:#c0392b;--bd:#d8d0c4;--c1:#d9622b;--c2:#7a3fb0;--c3:#2f7d4a;--c4:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15110d;--sf:#1e1913;--sf2:#2a231a;--tx:#f1e8da;--mt:#a39583;--ac:#8fd694;--wn:#f0b050;--er:#ff7a6b;--bd:#3a3226;--c1:#ff9a6b;--c2:#c49bff;--c3:#8fd694;--c4:#ff7a6b}}
+:root[data-theme="dark"]{--bg:#15110d;--sf:#1e1913;--sf2:#2a231a;--tx:#f1e8da;--mt:#a39583;--ac:#8fd694;--wn:#f0b050;--er:#ff7a6b;--bd:#3a3226;--c1:#ff9a6b;--c2:#c49bff;--c3:#8fd694;--c4:#ff7a6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 Georgia,"Times New Roman",serif}
+.w{max-width:980px;margin:0 auto;padding:14px 14px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:end}
+h1{font-size:24px;margin:0}h2{font-size:16px;margin:0}.mt{color:var(--mt);margin:2px 0;font-size:13px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select{font:inherit;font-size:14px;color:var(--tx);background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#go{background:var(--ac);color:var(--bg);border-color:var(--ac);font-weight:700}
+#prog{height:6px;background:var(--bd);border-radius:3px;margin:12px 0 4px;overflow:hidden}#pb{display:block;height:100%;width:0;background:var(--ac)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin:10px 0}
+.top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}.top>div{flex:1;min-width:190px}
+.chip{padding:2px 10px;border-radius:99px;background:var(--sf2);font-size:13px}
+.chip.run{background:var(--ac);color:var(--bg)}.chip.run::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;animation:pl 1.2s infinite}
+@keyframes pl{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){.chip.run::before{animation:none}}
+.dt{margin-top:10px;border-top:1px solid var(--bd);padding-top:10px}
+.ch{width:100%;height:auto;display:block;background:var(--sf2);border-radius:8px;touch-action:pan-y}
+.lg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.sw{font-size:12px;padding:3px 8px}.sw i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.sw.off{opacity:.4}
+.tip{font-variant-numeric:tabular-nums;font-size:13px;color:var(--mt);margin:6px 0;min-height:20px}
+.ev{list-style:none;margin:6px 0 0;padding:0;font-size:13px}.ev li{padding:3px 0 3px 8px;border-left:3px solid var(--wn);margin-bottom:3px}.ev li.dano{border-color:var(--er)}.ev li.etapa{border-color:var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--bd)}
+.ver{padding:10px 12px;border-radius:8px;font-weight:700;margin:8px 0}.ver.ok{background:var(--ac);color:var(--bg)}.ver.wn{background:var(--wn);color:#000}.ver.er{background:var(--er);color:#fff}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:8px 0}.kp div{background:var(--sf2);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--mt)}.kp b{display:block;font-size:17px;color:var(--tx)}
+.sc{overflow-x:auto}.vr{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:700;margin-right:6px;vertical-align:1px}.vr.ok{background:var(--ac);color:var(--bg)}.vr.wn{background:var(--wn);color:#000}.vr.er{background:var(--er);color:#fff}.vr:empty{width:10px;height:10px;padding:0;border-radius:50%}.card[data-lv=ok]{border-left:4px solid var(--ac)}.card[data-lv=wn]{border-left:4px solid var(--wn)}.card[data-lv=er]{border-left:4px solid var(--er)}.tm{background:var(--sf2);padding:1px 7px;border-radius:4px;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}.rt{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0}.rt div{background:var(--sf2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--mt)}.rt b{display:block;font-size:20px;color:var(--tx)}.rt b.tm{background:none;padding:0;border-radius:0}
+</style></head><body><div class="w">
+<header><div><h1>Rastreio da batata elétrica</h1><p class="mt">Lote BE-2026-0419 · batata E-0042 · simulação do processo logístico</p></div>
+<div class="ctl"><button id="go">Iniciar</button><button id="shock" title="Força um impacto no próximo registro">Injetar impacto</button><button id="rs">Nova simulação</button>
+<select id="sp" aria-label="Velocidade"><option value="60">Lento</option><option value="200" selected>Normal</option><option value="600">Rápido</option></select>
+<select id="mt" aria-label="Casca"><option value="s">Casca simples</option><option value="g">Casca com gel</option><option value="r">Casca reforçada</option></select></div></header>
+<div id="prog"><i id="pb"></i></div><p class="mt" id="now"></p><p class="mt"><span class="vr ok">Seguro</span><span class="vr wn">Levemente perigoso</span><span class="vr er">Dano provável</span></p>
+<section class="card"><h2>Em tempo real</h2><p class="mt">Todas as etapas no mesmo gráfico, atualizado enquanto o processo roda.</p><div class="dt" id="dlive"></div></section>
+<section id="sum" class="card" hidden></section>
+<section id="stages"></section></div>
+<script>
+const $=id=>document.getElementById(id),f=(n,d=0)=>n.toFixed(d).replace(".",","),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ST=[{n:"Remonte",d:600,a:25,v:.2,r:.0005,pk:[2,5]},{n:"Colheitadeira",d:1800,a:29,v:.9,r:.003,pk:[3,11]},{n:"Transporte",d:3600,a:31,v:1,r:.0008,pk:[3,12]},{n:"Tombamento",d:600,a:30,v:.6,r:.006,pk:[4,14]},{n:"Lavadouro",d:1200,a:18,v:.4,r:.002,pk:[2,6]}];
+const GL={s:6,g:7,r:11},SER=[["T","Temperatura","°C","--c1"],["g","Impacto","g","--c2"],["b","Bateria","%","--c3"],["r","Risco","%","--c4"]];
+const S0=[];let TOT=0;ST.forEach(s=>{S0.push(TOT);TOT+=s.d});
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let S;
+const clk=t=>new Date(S.start+t*1000).toLocaleTimeString("pt-BR"),dtm=t=>new Date(S.start+t*1000).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}),el=t=>{const m=Math.round(t/60);return m<60?m+" min":f(m/60,1)+" h"};
+function ev(type,text){S.ev.push({t:S.t,i:S.i,type,text})}
+function reset(){const d=new Date();d.setHours(6,0,0,0);S={seed:Date.now(),start:d.getTime(),i:0,t:0,ts:0,T:18,b:100,dmg:0,gp:0,acc:0,run:false,done:false,began:false,force:false,hot:0,cold:0,low:0,ev:[],st:ST.map(()=>[]),hide:{},hv:{}};S.rand=rng(S.seed);$("sum").hidden=true;$("sum").innerHTML="";
+ $("stages").innerHTML=ST.map((s,i)=>`<article class="card" id="c${i}"><div class="top"><div><h2>${i+1}. ${s.n}</h2><p class="mt" id="b${i}"></p></div><span class="chip" id="p${i}"></span><button class="det" data-k="${i}" aria-expanded="false">Mostrar detalhes</button></div><div class="dt" id="d${i}" hidden></div></article>`).join("");ui(1)}
+function step(){const s=ST[S.i],dt=10,R=S.rand;
+ S.T+=((s.a+1.5+(S.i==2?6*Math.sin(S.ts/1146):0))-S.T)*(1-Math.exp(-dt/700))+(R()-.5)*.08;
+ S.b-=.002*dt*(S.T>35?1.6:1);
+ let g=s.v*(.1+R()*.5);if(S.force||R()<s.r*dt){g=Math.min(16,S.force?10:s.pk[0]+(s.pk[1]-s.pk[0])*Math.pow(R(),2.5));S.force=false}
+ const gL=GL[$("mt").value]/(S.T<12?1.35:1);
+ if(g>gL){S.dmg+=(g/gL-1)*30+6;ev("dano","Dano provável: impacto de "+f(g,1)+" g (limite "+f(gL,1)+" g). Possível hematoma.")}
+ else if(g>gL*.7)ev("atencao","Atenção: impacto de "+f(g,1)+" g, perto do limite ("+f(gL,1)+" g).");
+ if(S.T<12&&!S.cold){S.cold=1;ev("temp","Batata abaixo de 12 °C: casca mais frágil, limite de impacto reduzido.")}if(S.T>13)S.cold=0;
+ if(S.T>35&&!S.hot){S.hot=1;ev("temp","Temperatura acima de 35 °C ("+f(S.T,1)+" °C).")}if(S.T<33)S.hot=0;
+ if(S.b<80&&!S.low){S.low=1;ev("bat","Bateria abaixo de 80%.")}
+ S.gp=Math.max(S.gp*Math.exp(-dt/900),g);
+ S.st[S.i].push({t:S.t,T:S.T,g,b:S.b,r:cl(S.gp/gL*55+(S.T<12?15:0)+S.dmg*.3,0,100)});
+ S.t+=dt;S.ts+=dt;
+ if(S.ts>=s.d){if(S.i==ST.length-1){S.run=false;S.done=true;ev("etapa","Processo concluído");fin()}else{S.i++;S.ts=0;ev("etapa","Início: "+ST[S.i].n)}}}
+function stats(i){const d=S.st[i];if(!d.length)return null;let a={T0:d[0].T,T1:d[d.length-1].T,Tn:1e9,Tx:-1e9,gx:0,b0:d[0].b,b1:d[d.length-1].b,rx:0};d.forEach(x=>{a.Tn=Math.min(a.Tn,x.T);a.Tx=Math.max(a.Tx,x.T);a.gx=Math.max(a.gx,x.g);a.rx=Math.max(a.rx,x.r)});a.nd=S.ev.filter(e=>e.i==i&&e.type=="dano").length;a.na=S.ev.filter(e=>e.i==i&&e.type=="atencao").length;return a}
+function sev(a){const gl=GL[$("mt").value],c=[["Temperatura",a.Tx-a.Tn,10],["Impacto",a.gx,gl],["Bateria",a.b0-a.b1,5]].map(([n,v,l])=>({n,v,r:v/l})).sort((x,y)=>y.r-x.r)[0];return{c,lv:a.nd?"er":(a.na||c.r>=.7)?"wn":"ok"}}
+function bf(i,a,st){const{c,lv}=sev(a),L={ok:"Seguro",wn:"Levemente perigoso",er:"Dano provável"};$("c"+i).dataset.lv=lv;return`<span class="vr ${lv}">${L[lv]}</span> Maior variação: <b>${c.n} ${c.n=="Temperatura"?f(c.v,1)+" °C":c.n=="Impacto"?f(c.v,1)+" g":"−"+f(c.v,1)+"%"}</b>${st=="Concluída"?" · "+a.nd+" dano(s), "+a.na+" atenção":" (parcial)"}`}
+function chart(k,data,evs,hide,t0,t1,hv){const W=640,H=k=="live"?360:210,L=8,Tp=10,w=W-2*L,h=H-Tp-22,X=t=>L+(t-t0)/(t1-t0)*w;
+ if(data.length<2)return'<p class="mt">Aperte Iniciar para ver os dados em tempo real.</p>';
+ let o=`<svg class="ch" data-k="${k}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de variações ao longo da etapa">`;
+ for(let i=0;i<5;i++){const y=Tp+h*i/4;o+=`<line x1="${L}" x2="${W-L}" y1="${y}" y2="${y}" stroke="var(--bd)"/>`}
+ SER.forEach(([c,,,v])=>{if(hide[c])return;let mn=1e9,mx=-1e9;data.forEach(d=>{mn=Math.min(mn,d[c]);mx=Math.max(mx,d[c])});if(mx-mn<1e-6)mx=mn+1;o+=`<polyline fill="none" stroke="var(${v})" stroke-width="1.6" stroke-linejoin="round" points="${data.map(d=>X(d.t).toFixed(1)+","+(Tp+h-(d[c]-mn)/(mx-mn)*h).toFixed(1)).join(" ")}"/>`});
+ evs.forEach(e=>{const x=X(e.t).toFixed(1);o+=`<line x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp+h}" stroke="var(--er)" stroke-dasharray="3 3" opacity=".55"/><circle cx="${x}" cy="${Tp}" r="3.5" fill="${e.type=="dano"?"var(--er)":"var(--wn)"}"/>${k=="live"?`<text x="${x}" y="${Tp+16}" font-size="11" font-weight="700" fill="var(--tx)" text-anchor="${+x>W-60?"end":"start"}" dx="${+x>W-60?-5:5}">${clk(e.t)}</text>`:""}`});
+ if(hv!=null){const x=L+hv*w;o+=`<line x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp+h}" stroke="var(--tx)" opacity=".6"/>`}
+ return o+`<text x="${L}" y="${H-6}" font-size="11" fill="var(--mt)">${clk(t0)}</text><text x="${W-L}" y="${H-6}" font-size="11" fill="var(--mt)" text-anchor="end">${clk(t1)}</text></svg>`}
+function dHTML(k){const all=k=="all"||k=="live",i=all?-1:+k,data=all?S.st.flat():S.st[i],t0=all?0:S0[i],t1=all?TOT:S0[i]+ST[i].d,hide=S.hide[k]||(S.hide[k]={}),hv=S.hv[k];
+ const evs=S.ev.filter(e=>all||e.i==i),lg=SER.map(([c,n,u,v])=>{let r="";if(data.length){const x=data.map(d=>d[c]);r=" "+f(Math.min(...x),1)+"–"+f(Math.max(...x),1)+" "+u}return`<button class="sw${hide[c]?" off":""}" data-k="${k}" data-s="${c}"><i style="background:var(${v})"></i>${n}${r}</button>`}).join("");
+ let tip="Passe o dedo ou o mouse sobre o gráfico para ver os valores no instante exato.";if(data.length){const d=hv==null?data[data.length-1]:data[cl(Math.round((t0+hv*(t1-t0)-data[0].t)/10),0,data.length-1)];tip=`<b class="tm">${dtm(d.t)}</b> · ${f(d.T,1)} °C · ${f(d.g,1)} g · bateria ${f(d.b,1)}% · risco ${f(d.r)}%`}
+ if(k=="live"){const d=hv==null?data[data.length-1]:data[cl(Math.round((t0+hv*(t1-t0)-data[0].t)/10),0,data.length-1)],ch=evs.filter(e=>e.type!="etapa").slice(-4).reverse();return`<div class="lg">${lg}</div>${chart(k,data,evs.filter(e=>e.type!="etapa"),hide,t0,t1,hv)}${d?`<div class="rt"><div>Hora<b class="tm">${clk(d.t)}</b></div><div>Temperatura<b>${f(d.T,1)} °C</b></div><div>Impacto<b>${f(d.g,1)} g</b></div><div>Bateria<b>${f(d.b,1)}%</b></div><div>Risco de hematoma<b>${f(d.r)}%</b></div></div>`:""}<ul class="ev">${ch.map(e=>`<li class="${e.type}"><b class="tm">${clk(e.t)}</b> ${ST[e.i].n} · ${e.text}</li>`).join("")||"<li class='etapa'>Nenhum evento registrado até agora.</li>"}</ul>`}return`<div class="lg">${lg}</div>${chart(k,data,evs.filter(e=>e.type!="etapa"),hide,t0,t1,hv)}<div class="tip">${tip}</div><ul class="ev">${evs.map(e=>`<li class="${e.type}"><b class="tm">${dtm(e.t)}</b> (+${el(e.t)}) · ${all?ST[e.i].n+" · ":""}${e.text}</li>`).join("")||"<li class='etapa'>Nenhum registro ainda.</li>"}</ul>`}
+function rd(k){const n=$(k=="all"?"dall":"d"+k);if(n&&!n.hidden)n.innerHTML=dHTML(k)}
+function fin(){ST.forEach((s,i)=>rd(i));rd("live");const all=S.st.flat(),nd=S.ev.filter(e=>e.type=="dano").length,na=S.ev.filter(e=>e.type=="atencao").length;
+ const ver=nd?["er","Dano provável: "+nd+" impacto(s) acima do limite da casca."]:na?["wn","Atenção: "+na+" impacto(s) perto do limite, sem dano provável."]:["ok","Íntegra: nenhum impacto acima do limite."];
+ let gx=0,gi=0,rx=0;ST.forEach((s,i)=>{const a=stats(i);if(a.gx>gx){gx=a.gx;gi=i}rx=Math.max(rx,a.rx)});const a0=all[0],a1=all[all.length-1];
+ const rows=ST.map((s,i)=>{const a=stats(i);return`<tr><td><span class="vr ${sev(a).lv}"></span>${s.n}</td><td>${f(a.T0,1)} → ${f(a.T1,1)} °C</td><td>${f(a.gx,1)} g</td><td>${a.nd} dano · ${a.na} atenção</td><td><button class="go2" data-k="${i}">Ver</button></td></tr>`}).join("");
+ $("sum").hidden=false;$("sum").innerHTML=`<div class="top"><div><h2>Resumo do processo</h2><p class="mt"><b class="tm">${dtm(0)}</b> até <b class="tm">${dtm(TOT)}</b> · duração ${el(TOT)}</p></div><button class="det" data-k="all" aria-expanded="false">Mostrar detalhes</button></div><div class="ver ${ver[0]}">${ver[1]}</div>${nd?`<p class="mt">Horários dos danos: ${S.ev.filter(e=>e.type=="dano").map(e=>`<b class="tm">${clk(e.t)}</b> ${ST[e.i].n}`).join(" · ")}</p>`:""}
+ <div class="kp"><div>Temperatura<b>${f(a0.T,1)} → ${f(a1.T,1)} °C</b></div><div>Bateria<b>${f(a0.b,1)} → ${f(a1.b,1)}%</b></div><div>Pico de impacto<b>${f(gx,1)} g</b>${ST[gi].n}</div><div>Risco máximo<b>${f(rx)}%</b>dano acumulado ${f(Math.min(100,S.dmg))}%</div></div>
+ <div class="sc"><table><thead><tr><th>Etapa</th><th>Temperatura</th><th>Pico</th><th>Eventos</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="dt" id="dall" hidden></div>`;
+ $("sum").scrollIntoView({behavior:"smooth",block:"start"})}
+let lu=0;function ui(force){const n=performance.now();if(!force&&n-lu<200)return;lu=n;
+ $("pb").style.width=((S.done?TOT:S0[S.i]+S.ts)/TOT*100)+"%";
+ $("now").textContent=S.done?"Processo concluído · "+clk(TOT)+" (hora simulada)":S.began?"Etapa atual: "+ST[S.i].n+" · "+clk(S.t)+" (hora simulada)":"Pronto para iniciar. A hora simulada começa às 06:00:00.";
+ ST.forEach((s,i)=>{const st=S.done||i<S.i?"Concluída":S.began&&i==S.i?(S.run?"Em processo":"Pausada"):"Aguardando",ch=$("p"+i);ch.textContent=st;ch.className="chip"+(st=="Em processo"?" run":"");const a=stats(i);
+  $("b"+i).innerHTML=st!="Aguardando"&&a?bf(i,a,st):(delete $("c"+i).dataset.lv,"");
+  if(i==S.i&&S.run)rd(i)});
+ $("go").textContent=S.done?"Concluído":S.run?"Pausar":S.began?"Continuar":"Iniciar";$("go").disabled=S.done;if(S.run||force)rd("live")}
+let last=0;function loop(n){const d=Math.min(.1,(n-last)/1000);last=n;if(S.run){S.acc+=d*+$("sp").value;while(S.acc>=10&&S.run){S.acc-=10;step()}}ui();requestAnimationFrame(loop)}
+$("go").onclick=()=>{if(S.done)return;if(!S.began){S.began=true;ev("etapa","Início: "+ST[0].n);$("mt").disabled=true}S.run=!S.run;ui(1)};
+$("shock").onclick=()=>{if(S.run)S.force=true};
+$("rs").onclick=()=>{$("mt").disabled=false;reset()};
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const k=b.dataset.k;
+ if(b.classList.contains("det")){const n=$(k=="all"?"dall":"d"+k);n.hidden=!n.hidden;b.textContent=n.hidden?"Mostrar detalhes":"Ocultar detalhes";b.setAttribute("aria-expanded",!n.hidden);rd(k)}
+ else if(b.classList.contains("sw")){const h=S.hide[k]||(S.hide[k]={});h[b.dataset.s]=!h[b.dataset.s];rd(k)}
+ else if(b.classList.contains("go2")){if($("d"+k).hidden)document.querySelector("#c"+k+" .det").click();$("c"+k).scrollIntoView({behavior:"smooth",block:"center"})}});
+document.addEventListener("pointermove",e=>{const s=e.target.closest&&e.target.closest("svg.ch");if(!s)return;const r=s.getBoundingClientRect();S.hv[s.dataset.k]=cl(((e.clientX-r.left)/r.width*640-8)/624,0,1);rd(s.dataset.k)});
+document.addEventListener("pointerout",e=>{const s=e.target.closest&&e.target.closest("svg.ch");if(s&&!s.contains(e.relatedTarget)){S.hv[s.dataset.k]=null;rd(s.dataset.k)}});
+reset();requestAnimationFrame(loop);
+</script></body></html>
